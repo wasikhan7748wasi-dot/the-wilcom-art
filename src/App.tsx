@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Scissors, ShoppingBag, Download, User, Key, Lock, 
-  ShieldCheck, CreditCard, DollarSign, Plus, Check, Globe, 
-  LogOut, Eye, Upload, AlertCircle, FileText
+  ShoppingBag, Search, User, Lock, Key, CheckCircle, 
+  Download, ArrowRight, Shield, Layers, Cpu, Smartphone, LogOut, Plus
 } from 'lucide-react';
 
 // --- TYPES & MODELS ---
@@ -14,580 +13,426 @@ interface Product {
   stitches: number;
   width: number;
   height: number;
-  unit: string;
+  category: string;
   imageUrl: string;
-  fileUrl: string; // Machine file path
+  fileUrl: string;
 }
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  purchasedFileIds: string[];
-}
-
-interface PaymentSettings {
-  stripePublishableKey: string;
-  paypalClientId: string;
-  wiseEmail: string;
-  bankIban: string;
-  easypaisaNumber: string;
-}
-
-// --- DUMMY INITIAL DATA ---
-const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    title: 'Floral Patch Embroidery Design',
-    price: 15,
-    format: 'DST / PES / ART',
-    stitches: 12500,
-    width: 4,
-    height: 4,
-    unit: 'inch',
-    imageUrl: 'https://images.unsplash.com/photo-1528458876861-544fd1761a91?auto=format&fit=crop&w=600&q=80',
-    fileUrl: 'floral_patch_dst.zip'
-  },
-  {
-    id: '2',
-    title: 'Eagle Crest Jacket Back Design',
-    price: 25,
-    format: 'DST / EXP / JEF',
-    stitches: 45000,
-    width: 10,
-    height: 12,
-    unit: 'inch',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
-    fileUrl: 'eagle_crest.zip'
-  }
-];
 
 export default function App() {
-  // Navigation & User State
-  const [view, setView] = useState<'store' | 'admin' | 'dashboard' | 'checkout'>('store');
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  // Navigation State
+  const [activeTab, setActiveTab] = useState<'store' | 'admin'>('store');
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  
+  // Secret Admin Login Form
+  const [adminKeyInput, setAdminKeyInput] = useState('');
+  const [adminError, setAdminError] = useState('');
 
-  // Auth Inputs
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-
-  // Store & Selected Items
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
-  // Admin Payment Settings State
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
-    stripePublishableKey: 'pk_test_sample_key_12345',
-    paypalClientId: 'client_id_sample_paypal_6789',
-    wiseEmail: 'payments@wilcomart.com',
-    bankIban: 'PK36MEZN0099220101234567',
-    easypaisaNumber: '03001234567'
-  });
+  // Sample Products Data
+  const [products, setProducts] = useState<Product[]>([
+    {
+      id: '1',
+      title: 'Precision Floral Patch Embroidery',
+      price: 15,
+      format: 'EMB / DST / PES',
+      stitches: 12500,
+      width: 4,
+      height: 4,
+      category: 'Floral',
+      imageUrl: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=600&q=80',
+      fileUrl: '#'
+    },
+    {
+      id: '2',
+      title: 'Commercial Eagle Crest Emblem',
+      price: 25,
+      format: 'EMB / DST',
+      stitches: 24200,
+      width: 5,
+      height: 6,
+      category: 'Badges',
+      imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80',
+      fileUrl: '#'
+    }
+  ]);
 
   // Admin New Product Form State
   const [newTitle, setNewTitle] = useState('');
-  const [newPrice, setNewPrice] = useState<number>(10);
-  const [newFormat, setNewFormat] = useState('DST');
-  const [newStitches, setNewStitches] = useState<number>(5000);
-  const [newWidth, setNewWidth] = useState<number>(3);
-  const [newHeight, setNewHeight] = useState<number>(3);
+  const [newPrice, setNewPrice] = useState('');
+  const [newFormat, setNewFormat] = useState('EMB / DST');
+  const [newStitches, setNewStitches] = useState('');
+  const [newWidth, setNewWidth] = useState('');
+  const [newHeight, setNewHeight] = useState('');
+  const [newCategory, setNewCategory] = useState('General');
+  const [newImage, setNewImage] = useState('');
 
-  // --- AUTH HANDLERS ---
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  // Handle Admin Secret Login
+  const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (authMode === 'signup') {
-      const newUser: UserProfile = {
-        id: Date.now().toString(),
-        name: authName || 'Valued Client',
-        email: authEmail,
-        purchasedFileIds: []
-      };
-      setCurrentUser(newUser);
+    // Secret Key set to "admin123"
+    if (adminKeyInput === 'admin123') {
+      setIsAdminLoggedIn(true);
+      setAdminError('');
     } else {
-      // Mock Login
-      setCurrentUser({
-        id: 'u101',
-        name: 'John Doe',
-        email: authEmail || 'client@example.com',
-        purchasedFileIds: ['1'] // Default 1 purchased file for demo
-      });
-    }
-    setIsAuthModalOpen(false);
-    setAuthPassword('');
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setView('store');
-  };
-
-  // --- PURCHASE FLOW ---
-  const handleBuyNow = (product: Product) => {
-    if (!currentUser) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-    setSelectedProduct(product);
-    setView('checkout');
-  };
-
-  const handlePaymentSuccess = () => {
-    if (currentUser && selectedProduct) {
-      const updatedUser = {
-        ...currentUser,
-        purchasedFileIds: [...currentUser.purchasedFileIds, selectedProduct.id]
-      };
-      setCurrentUser(updatedUser);
-      alert('Payment Verified! The embroidery file is now unlocked in your account.');
-      setView('dashboard');
+      setAdminError('Invalid Passkey! Access Denied.');
     }
   };
 
-  // --- ADMIN ADD PRODUCT ---
+  // Add Product Function
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    const createdProduct: Product = {
+    if (!newTitle || !newPrice) return;
+
+    const item: Product = {
       id: Date.now().toString(),
       title: newTitle,
-      price: newPrice,
+      price: Number(newPrice),
       format: newFormat,
-      stitches: newStitches,
-      width: newWidth,
-      height: newHeight,
-      unit: 'inch',
-      imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80',
-      fileUrl: `${newTitle.toLowerCase().replace(/\s+/g, '_')}.zip`
+      stitches: Number(newStitches) || 10000,
+      width: Number(newWidth) || 4,
+      height: Number(newHeight) || 4,
+      category: newCategory,
+      imageUrl: newImage || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=600&q=80',
+      fileUrl: '#'
     };
 
-    setProducts([createdProduct, ...products]);
+    setProducts([item, ...products]);
     setNewTitle('');
-    alert('New Design added to Store!');
+    setNewPrice('');
+    setNewStitches('');
+    setNewWidth('');
+    setNewHeight('');
+    setNewImage('');
+    alert('New Design Published Successfully!');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-      {/* HEADER NAVBAR */}
-      <header className="bg-slate-900 text-white sticky top-0 z-40 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-[#0b0f17] text-white font-sans selection:bg-amber-500 selection:text-black">
+      
+      {/* Top Announcement Bar */}
+      <div className="bg-amber-500 text-black font-bold text-xs py-2 px-4 flex flex-wrap justify-between items-center tracking-wide">
+        <div className="flex items-center gap-2">
+          <span className="bg-black text-amber-500 text-[10px] px-2 py-0.5 rounded font-black uppercase">
+            WILCOM EMBROIDERYSTUDIO E4.5
+          </span>
+          <span>Native .EMB + .DST Instant Machine Files</span>
+        </div>
+        <div className="hidden md:flex gap-4">
+          <span>WhatsApp: +923390075018</span>
+        </div>
+      </div>
+
+      {/* Main Header / Navigation */}
+      <header className="border-b border-gray-800 bg-[#0f1522]/90 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          
+          {/* Logo */}
           <div 
-            onClick={() => setView('store')} 
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => setActiveTab('store')}
           >
-            <Scissors className="w-7 h-7 text-indigo-400" />
-            <span className="text-xl font-bold tracking-wide">The Wilcom Art</span>
+            <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-2.5 rounded-xl shadow-lg shadow-amber-500/20 text-black">
+              <Layers className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold tracking-wider text-white">THE WILCOM ART</h1>
+              <p className="text-[10px] text-amber-400/80 uppercase tracking-widest font-semibold">Digitizing Studio</p>
+            </div>
           </div>
 
+          {/* Header Action Buttons */}
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setView('store')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === 'store' ? 'bg-indigo-600' : 'text-slate-300 hover:text-white'}`}
-            >
-              Design Store
-            </button>
-
-            {currentUser && (
-              <button 
-                onClick={() => setView('dashboard')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === 'dashboard' ? 'bg-indigo-600' : 'text-slate-300 hover:text-white'}`}
-              >
-                My Downloads ({currentUser.purchasedFileIds.length})
-              </button>
-            )}
+            <div className="relative hidden sm:block">
+              <input 
+                type="text" 
+                placeholder="Search designs..." 
+                className="bg-[#182030] text-sm text-gray-200 pl-9 pr-4 py-2 rounded-lg border border-gray-700/60 focus:outline-none focus:border-amber-500 w-48 transition-all"
+              />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+            </div>
 
             <button 
-              onClick={() => setView('admin')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${view === 'admin' ? 'bg-indigo-600' : 'text-slate-300 hover:text-white'}`}
+              onClick={() => setActiveTab('store')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
+                activeTab === 'store' 
+                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/10' 
+                  : 'bg-[#182030] text-gray-300 hover:text-white border border-gray-700/50'
+              }`}
             >
-              Admin Panel
+              <ShoppingBag className="w-4 h-4" />
+              Store
             </button>
 
-            {currentUser ? (
-              <button 
-                onClick={handleLogout}
-                className="p-2 text-red-400 hover:bg-slate-800 rounded-lg flex items-center gap-1 text-sm"
-              >
-                <LogOut className="w-4 h-4" /> Logout
-              </button>
-            ) : (
-              <button 
-                onClick={() => setIsAuthModalOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1"
-              >
-                <User className="w-4 h-4" /> Sign In / Register
-              </button>
-            )}
+            {/* Secret Portal Icon (No Direct "Admin" Text for Public) */}
+            <button 
+              onClick={() => setActiveTab('admin')}
+              className="p-2.5 rounded-lg bg-[#182030] text-gray-400 hover:text-amber-400 border border-gray-700/50 transition-all"
+              title="Portal Access"
+            >
+              <Lock className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* VIEW 1: EMBROIDERY DESIGN STORE */}
-      {view === 'store' && (
-        <main className="max-w-7xl mx-auto px-4 py-10">
-          <div className="text-center mb-10">
-            <h1 className="text-4xl font-extrabold text-slate-900">Digitized Embroidery Store</h1>
-            <p className="text-slate-600 mt-2">Instant machine file downloads after payment (.DST, .PES, .ART)</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {products.map((p) => {
-              const isPurchased = currentUser?.purchasedFileIds.includes(p.id);
-              return (
-                <div key={p.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <img src={p.imageUrl} alt={p.title} className="w-full h-56 object-cover" />
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-lg text-slate-900">{p.title}</h3>
-                      <span className="text-xl font-black text-emerald-600">${p.price}</span>
-                    </div>
-
-                    <div className="text-xs text-slate-500 space-y-1 mb-4">
-                      <p><strong>Format:</strong> {p.format}</p>
-                      <p><strong>Stitches:</strong> {p.stitches.toLocaleString()}</p>
-                      <p><strong>Dimensions:</strong> {p.width} x {p.height} {p.unit}</p>
-                    </div>
-
-                    {isPurchased ? (
-                      <button 
-                        onClick={() => setView('dashboard')}
-                        className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2"
-                      >
-                        <Download className="w-4 h-4" /> Download Machine File
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleBuyNow(p)}
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2"
-                      >
-                        <ShoppingBag className="w-4 h-4" /> Buy & Download Now
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </main>
-      )}
-
-      {/* VIEW 2: CHECKOUT & PAYMENT PAGE */}
-      {view === 'checkout' && selectedProduct && (
-        <main className="max-w-2xl mx-auto px-4 py-12">
-          <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-200 space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900 border-b pb-4">Secure Checkout</h2>
-
-            <div className="flex gap-4 items-center bg-slate-50 p-4 rounded-xl border">
-              <img src={selectedProduct.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover" />
-              <div className="flex-1">
-                <h4 className="font-bold text-slate-900">{selectedProduct.title}</h4>
-                <p className="text-xs text-slate-500">{selectedProduct.format} | {selectedProduct.stitches} stitches</p>
+      {/* Dynamic Content Views */}
+      {activeTab === 'store' ? (
+        <main>
+          {/* Hero Banner Area */}
+          <section className="relative overflow-hidden py-16 px-4 bg-gradient-to-b from-[#131b2e] to-[#0b0f17] border-b border-gray-800/60">
+            <div className="max-w-4xl mx-auto text-center relative z-10">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase tracking-wider mb-6">
+                <Cpu className="w-3.5 h-3.5" /> WILCOM EMB OBJECT FILES & TAJIMA DST MACHINE FORMATS
               </div>
-              <span className="text-2xl font-black text-emerald-600">${selectedProduct.price}</span>
+              <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight mb-6">
+                Precision Embroidery Designs & <span className="text-amber-400">Custom Digitizing</span>
+              </h2>
+              <p className="text-gray-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed mb-8">
+                Industrial grade embroidery files digitized in Wilcom EmbroideryStudio e4.5. Built with balanced underlays, pull compensation, and clean stitch paths ready for Tajima, Barudan, Brother, and commercial multi-head machines.
+              </p>
+
+              <div className="flex flex-wrap justify-center gap-4">
+                <a href="#marketplace" className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all">
+                  Browse Marketplace <ArrowRight className="w-4 h-4" />
+                </a>
+                <a href="https://wa.me/923390075018" target="_blank" rel="noreferrer" className="px-6 py-3.5 rounded-xl bg-[#182030] hover:bg-[#202b40] text-white font-semibold text-sm border border-gray-700 flex items-center gap-2 transition-all">
+                  <Smartphone className="w-4 h-4 text-amber-400" /> Request Custom Digitizing
+                </a>
+              </div>
+
+              {/* Badges */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-12 pt-8 border-t border-gray-800/80 text-left">
+                <div className="flex items-center gap-2 text-xs text-gray-300">
+                  <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" /> Native .EMB Wireframes
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-300">
+                  <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" /> Instant Machine Downloads
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-300">
+                  <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" /> Commercial Stitch Tested
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-300">
+                  <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" /> Zero Thread Break Paths
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Product Marketplace Catalog */}
+          <section id="marketplace" className="max-w-7xl mx-auto px-4 py-12">
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-wide">Featured Digitized Designs</h3>
+                <p className="text-xs text-gray-400 mt-1">Ready to load machine files with full stitch info</p>
+              </div>
             </div>
 
-            {/* PAYMENT OPTIONS SETUP BY ADMIN */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm uppercase text-slate-500 tracking-wider">Select Payment Method</h3>
-              
-              {/* International Card (Stripe / PayPal) */}
-              <div className="border border-indigo-200 bg-indigo-50/50 p-4 rounded-xl space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-indigo-600" /> Credit / Debit Card (International)
-                  </span>
-                  <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded font-bold">Automated</span>
-                </div>
-                <p className="text-xs text-slate-600">Supports Stripe & PayPal Instant Gateway Key</p>
-                <button 
-                  onClick={handlePaymentSuccess}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow mt-2"
+            {/* Product Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((item) => (
+                <div 
+                  key={item.id} 
+                  className="bg-[#121929] border border-gray-800 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 flex flex-col group"
                 >
-                  Pay ${selectedProduct.price} via Card (Instant Unlock)
-                </button>
-              </div>
-
-              {/* Wise / Wire Bank Transfer */}
-              <div className="border border-slate-200 p-4 rounded-xl space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-emerald-600" /> Wise / International SWIFT
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600">Wise Email: <strong>{paymentSettings.wiseEmail}</strong></p>
-                <p className="text-xs text-slate-600">IBAN: <strong>{paymentSettings.bankIban}</strong></p>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setView('store')} 
-              className="text-slate-500 text-sm font-medium w-full text-center hover:underline"
-            >
-              Cancel & Return to Store
-            </button>
-          </div>
-        </main>
-      )}
-
-      {/* VIEW 3: USER DOWNLOADS DASHBOARD */}
-      {view === 'dashboard' && (
-        <main className="max-w-4xl mx-auto px-4 py-10">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Welcome, {currentUser?.name}</h1>
-              <p className="text-sm text-slate-500">{currentUser?.email}</p>
-            </div>
-            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">Account Active</span>
-          </div>
-
-          <h2 className="text-xl font-bold text-slate-900 mb-4">Your Purchased Embroidery Files</h2>
-          <div className="space-y-4">
-            {products
-              .filter((p) => currentUser?.purchasedFileIds.includes(p.id))
-              .map((p) => (
-                <div key={p.id} className="bg-white p-4 border border-slate-200 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <img src={p.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover" />
-                    <div>
-                      <h4 className="font-bold text-slate-900">{p.title}</h4>
-                      <span className="text-xs text-indigo-600 font-semibold">{p.format}</span>
+                  <div className="relative h-52 bg-gray-900 overflow-hidden">
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 left-3 bg-black/80 backdrop-blur text-amber-400 text-[10px] font-bold uppercase px-2.5 py-1 rounded-md border border-amber-500/30">
+                      {item.format}
                     </div>
                   </div>
-                  <a 
-                    href={`#${p.fileUrl}`} 
-                    onClick={() => alert(`Downloading production file: ${p.fileUrl}`)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg flex items-center gap-2 text-sm shadow"
-                  >
-                    <Download className="w-4 h-4" /> Download File
-                  </a>
+
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <h4 className="font-bold text-white text-base leading-snug group-hover:text-amber-400 transition-colors">
+                          {item.title}
+                        </h4>
+                        <span className="text-amber-400 font-extrabold text-lg">${item.price}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 my-4 bg-[#0b0f17] p-3 rounded-lg text-xs text-gray-400 border border-gray-800/80">
+                        <div>
+                          <span className="block text-[10px] text-gray-500 uppercase">Stitch Count</span>
+                          <span className="font-semibold text-gray-200">{item.stitches.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] text-gray-500 uppercase">Dimensions</span>
+                          <span className="font-semibold text-gray-200">{item.width}" x {item.height}"</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-500/10">
+                      <Download className="w-4 h-4" /> Buy & Instant Download
+                    </button>
+                  </div>
                 </div>
               ))}
-          </div>
+            </div>
+          </section>
         </main>
-      )}
-
-      {/* VIEW 4: ADMIN PANEL (PAYMENT KEYS + STORE CONTROL) */}
-      {view === 'admin' && (
-        <main className="max-w-6xl mx-auto px-4 py-10 space-y-10">
-          <h1 className="text-3xl font-extrabold text-slate-900">Admin Control Center</h1>
-
-          {/* SECTION A: PAYMENT SETTINGS */}
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center gap-2 border-b pb-4">
-              <Key className="w-6 h-6 text-indigo-600" />
-              <h2 className="text-xl font-bold">International & Local Payment Settings</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold mb-1">Stripe Publishable Key</label>
-                <input 
-                  type="text" 
-                  value={paymentSettings.stripePublishableKey}
-                  onChange={(e) => setPaymentSettings({...paymentSettings, stripePublishableKey: e.target.value})}
-                  className="w-full border p-3 rounded-lg font-mono text-sm bg-slate-50 outline-none"
-                />
+      ) : (
+        /* Secret Admin Portal View */
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          {!isAdminLoggedIn ? (
+            /* Login Lock Box */
+            <div className="max-w-md mx-auto bg-[#121929] border border-gray-800 rounded-2xl p-8 shadow-2xl">
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-amber-500/30">
+                  <Key className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Owner Portal Access</h3>
+                <p className="text-xs text-gray-400 mt-1">Enter your admin passkey to manage products</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-1">PayPal Client ID</label>
-                <input 
-                  type="text" 
-                  value={paymentSettings.paypalClientId}
-                  onChange={(e) => setPaymentSettings({...paymentSettings, paypalClientId: e.target.value})}
-                  className="w-full border p-3 rounded-lg font-mono text-sm bg-slate-50 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Wise Account Email</label>
-                <input 
-                  type="text" 
-                  value={paymentSettings.wiseEmail}
-                  onChange={(e) => setPaymentSettings({...paymentSettings, wiseEmail: e.target.value})}
-                  className="w-full border p-3 rounded-lg text-sm bg-slate-50 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Bank IBAN (SWIFT Direct)</label>
-                <input 
-                  type="text" 
-                  value={paymentSettings.bankIban}
-                  onChange={(e) => setPaymentSettings({...paymentSettings, bankIban: e.target.value})}
-                  className="w-full border p-3 rounded-lg font-mono text-sm bg-slate-50 outline-none"
-                />
-              </div>
-            </div>
-
-            <button 
-              onClick={() => alert('Payment Settings Saved Successfully!')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm"
-            >
-              Save Payment Settings
-            </button>
-          </div>
-
-          {/* SECTION B: UPLOAD NEW EMBROIDERY DESIGN */}
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center gap-2 border-b pb-4">
-              <Plus className="w-6 h-6 text-emerald-600" />
-              <h2 className="text-xl font-bold">Upload New Digitized Design</h2>
-            </div>
-
-            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-semibold mb-1">Design Title</label>
-                <input 
-                  type="text" 
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g., Lion Crest Patch"
-                  className="w-full border p-3 rounded-lg text-sm outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Price ($ USD)</label>
-                <input 
-                  type="number" 
-                  required
-                  value={newPrice}
-                  onChange={(e) => setNewPrice(parseFloat(e.target.value) || 0)}
-                  className="w-full border p-3 rounded-lg text-sm outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Machine Format</label>
-                <input 
-                  type="text" 
-                  value={newFormat}
-                  onChange={(e) => setNewFormat(e.target.value)}
-                  placeholder="DST, PES, ART, etc."
-                  className="w-full border p-3 rounded-lg text-sm outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Stitch Count</label>
-                <input 
-                  type="number" 
-                  value={newStitches}
-                  onChange={(e) => setNewStitches(parseInt(e.target.value) || 0)}
-                  className="w-full border p-3 rounded-lg text-sm outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Width (Inches)</label>
-                <input 
-                  type="number" 
-                  step="0.1"
-                  value={newWidth}
-                  onChange={(e) => setNewWidth(parseFloat(e.target.value) || 0)}
-                  className="w-full border p-3 rounded-lg text-sm outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Height (Inches)</label>
-                <input 
-                  type="number" 
-                  step="0.1"
-                  value={newHeight}
-                  onChange={(e) => setNewHeight(parseFloat(e.target.value) || 0)}
-                  className="w-full border p-3 rounded-lg text-sm outline-none"
-                />
-              </div>
-
-              <div className="md:col-span-3">
-                <button 
-                  type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl text-sm shadow"
-                >
-                  Publish Design to Store
-                </button>
-              </div>
-            </form>
-          </div>
-        </main>
-      )}
-
-      {/* AUTHENTICATION MODAL (SIGNUP / LOGIN) */}
-      {isAuthModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white max-w-md w-full p-8 rounded-2xl shadow-2xl relative">
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {authMode === 'login' ? 'Sign In to Your Account' : 'Create New Account'}
-            </h3>
-            <p className="text-xs text-slate-500 mb-6">Create an account to manage and download your purchased designs anytime.</p>
-
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              {authMode === 'signup' && (
+              <form onSubmit={handleAdminLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Full Name</label>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">Admin Passkey</label>
                   <input 
-                    type="text" 
-                    required
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    placeholder="John Doe"
-                    className="w-full border p-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    type="password"
+                    placeholder="Enter passkey (Default: admin123)"
+                    value={adminKeyInput}
+                    onChange={(e) => setAdminKeyInput(e.target.value)}
+                    className="w-full bg-[#0b0f17] text-sm text-white px-4 py-3 rounded-xl border border-gray-700 focus:outline-none focus:border-amber-500"
                   />
                 </div>
-              )}
 
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Email Address</label>
-                <input 
-                  type="email" 
-                  required
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="client@example.com"
-                  className="w-full border p-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+                {adminError && (
+                  <p className="text-red-400 text-xs font-semibold">{adminError}</p>
+                )}
 
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Password</label>
-                <input 
-                  type="password" 
-                  required
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  className="w-full border p-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <button 
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow mt-2"
-              >
-                {authMode === 'login' ? 'Sign In' : 'Register Account'}
-              </button>
-            </form>
-
-            <div className="mt-6 text-center text-xs text-slate-500">
-              {authMode === 'login' ? (
-                <p>Don't have an account? <button onClick={() => setAuthMode('signup')} className="text-indigo-600 font-bold underline">Register</button></p>
-              ) : (
-                <p>Already have an account? <button onClick={() => setAuthMode('login')} className="text-indigo-600 font-bold underline">Sign In</button></p>
-              )}
+                <button 
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all"
+                >
+                  Unlock Admin Dashboard
+                </button>
+              </form>
             </div>
+          ) : (
+            /* Admin Upload Dashboard */
+            <div>
+              <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-800">
+                <div>
+                  <h2 className="text-2xl font-black text-white">Admin Dashboard</h2>
+                  <p className="text-xs text-gray-400">Upload new Wilcom EMB / DST design files</p>
+                </div>
+                <button 
+                  onClick={() => setIsAdminLoggedIn(false)}
+                  className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold flex items-center gap-2 hover:bg-red-500/20"
+                >
+                  <LogOut className="w-4 h-4" /> Lock Panel
+                </button>
+              </div>
 
-            <button 
-              onClick={() => setIsAuthModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-sm"
-            >
-              ✕
-            </button>
-          </div>
+              {/* Upload Form */}
+              <div className="bg-[#121929] border border-gray-800 rounded-2xl p-6 mb-8">
+                <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-amber-400" /> Add New Embroidery Design
+                </h3>
+
+                <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Design Title</label>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Royal Crown Crest"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      className="w-full bg-[#0b0f17] text-sm text-white px-3.5 py-2.5 rounded-lg border border-gray-700 focus:border-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Price ($ USD)</label>
+                    <input 
+                      type="number"
+                      placeholder="15"
+                      value={newPrice}
+                      onChange={(e) => setNewPrice(e.target.value)}
+                      className="w-full bg-[#0b0f17] text-sm text-white px-3.5 py-2.5 rounded-lg border border-gray-700 focus:border-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Formats Offered</label>
+                    <input 
+                      type="text"
+                      placeholder="EMB / DST / PES"
+                      value={newFormat}
+                      onChange={(e) => setNewFormat(e.target.value)}
+                      className="w-full bg-[#0b0f17] text-sm text-white px-3.5 py-2.5 rounded-lg border border-gray-700 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Total Stitches</label>
+                    <input 
+                      type="number"
+                      placeholder="18500"
+                      value={newStitches}
+                      onChange={(e) => setNewStitches(e.target.value)}
+                      className="w-full bg-[#0b0f17] text-sm text-white px-3.5 py-2.5 rounded-lg border border-gray-700 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Width (Inches)</label>
+                    <input 
+                      type="number"
+                      placeholder="4"
+                      value={newWidth}
+                      onChange={(e) => setNewWidth(e.target.value)}
+                      className="w-full bg-[#0b0f17] text-sm text-white px-3.5 py-2.5 rounded-lg border border-gray-700 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Height (Inches)</label>
+                    <input 
+                      type="number"
+                      placeholder="5"
+                      value={newHeight}
+                      onChange={(e) => setNewHeight(e.target.value)}
+                      className="w-full bg-[#0b0f17] text-sm text-white px-3.5 py-2.5 rounded-lg border border-gray-700 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-gray-400 mb-1">Image URL</label>
+                    <input 
+                      type="text"
+                      placeholder="https://..."
+                      value={newImage}
+                      onChange={(e) => setNewImage(e.target.value)}
+                      className="w-full bg-[#0b0f17] text-sm text-white px-3.5 py-2.5 rounded-lg border border-gray-700 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 mt-2">
+                    <button 
+                      type="submit"
+                      className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all"
+                    >
+                      Publish Design To Store
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 bg-[#080b11] py-8 text-center text-xs text-gray-500">
+        <p>© 2026 The Wilcom Art. Digitized for Commercial Embroidery Machines.</p>
+      </footer>
     </div>
   );
 }
